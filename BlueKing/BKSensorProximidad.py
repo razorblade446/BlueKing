@@ -60,9 +60,9 @@ class BKSensorProximidad(QtCore.QThread):
 
             #Señalar la distancia
             print("Distancia sensor " + `self.id_sensor` + ": " + `distancia` + " m")
-            self.emit(QtCore.SIGNAL("distancia_sensor"), distancia)
+            self.emit(QtCore.SIGNAL("distancia_sensor"), distancia, self.id_sensor)
 
-            time.sleep(1)
+            time.sleep(0.1)
 
         self.terminate()
 

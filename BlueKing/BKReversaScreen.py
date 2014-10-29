@@ -12,6 +12,7 @@ class BKReversaScreen(QWidget):
         super(BKReversaScreen,self).__init__()
         self.sensorActivo = 0
         self.inicializarUI()
+        self.distancias=[]
 
     def inicializarUI(self):
         self.setWindowTitle("BlueKing::Reversa")
@@ -53,37 +54,34 @@ class BKReversaScreen(QWidget):
     def mousePressEvent(self, QMouseEvent):
         if self.sensorActivo == 0:
             # Iniciar sensores de Proximidad
-            self.sensor1 = BKSensorProximidad(1, 15, 14)
+            self.sensor1 = BKSensorProximidad(0, 15, 14)
             self.sensor1.connect(self.sensor1, QtCore.SIGNAL('distancia_sensor'), self.mostrarMedida)
             self.sensor1.start()
-            #self.sensor2 = BKSensorProximidad(2, 23, 22)
-            #self.sensor2.start()
-            #self.sensor3 = BKSensorProximidad(3, 25, 24)
-            #self.sensor3.start()
-            #self.sensorActivo = 1
+            self.distancias[0] = 0.0
+            self.sensor2 = BKSensorProximidad(1, 23, 22)
+            self.sensor2.connect(self.sensor2, QtCore.SIGNAL('distancia_sensor'), self.mostrarMedida)
+            self.sensor2.start()
+            self.distancias[1] = 0.0
+            self.sensor3 = BKSensorProximidad(2, 25, 24)
+            self.sensor3.connect(self.sensor2, QtCore.SIGNAL('distancia_sensor'), self.mostrarMedida)
+            self.sensor3.start()
+            self.distancias[2] = 0.0
+            self.sensorActivo = 1
         else:
             # Detener sensores
             self.sensor1.stop()
             #self.sensor2.stop()
             #self.sensor3.stop()
 
-    @pyqtSlot(int, name='mostrarMedida')
-    @pyqtSlot(int, name='distancia_sensor')
-    def mostrarMedida(self, numero):
-        self.distlabel.setText(`numero`)
+    def mostrarMedida(self, sensor, numero):
+        # Calcular la menor distancia.
+        self.distancias[sensor] = numero
+        tnumero = 1000.0
+        for n in range(len(self.distancias)):
+            if self.distancias[n] < tnumero:
+                tnumero = self.distancias[n]
 
-class TestCounter(QtCore.QThread):
-    def __init__(self):
-        QtCore.QThread.__init__(self)
-        self.counter = 0
-
-    def __del__(self):
-        self.wait()
-
-    def run(self):
-        for i in range(1000):
-            time.sleep(0.03)
-            self.emit(QtCore.SIGNAL('incrementarMedida'), self.counter)
-            self.counter += 1
-            print("cuenta: " + `self.counter`)
-        self.terminate()
+        if tnumero == 1000.0:
+            self.distlabel.setText("---")
+        else:
+            self.distlabel.setText(`numero`)
