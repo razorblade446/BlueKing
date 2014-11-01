@@ -42,7 +42,7 @@ class BKSensorProximidad(QtCore.QThread):
             while GPIO.input(self.gpio_in) == 0:
                 senal_off = time.time()
 
-            while GPIO.input(self.gpio_in) == 1 and (senal_on - senal_off) < 0.38:
+            while GPIO.input(self.gpio_in) == 1 and (senal_on - senal_off) < 0.038:
                 senal_on = time.time()
 
             tiempo = senal_on - senal_off

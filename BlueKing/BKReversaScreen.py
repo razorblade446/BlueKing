@@ -4,7 +4,7 @@ import time
 from PyQt4 import QtCore
 from PyQt4.QtGui import *
 from PyQt4.QtCore import pyqtSlot
-from BKSensorProximidad import BKSensorProximidad
+from BKSensorProximidadDummie import BKSensorProximidadDummie
 
 class BKReversaScreen(QWidget):
 
