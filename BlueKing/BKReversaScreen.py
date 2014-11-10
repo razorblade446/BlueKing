@@ -1,9 +1,10 @@
+# vim: set fileencoding=UTF-8 :
 __author__ = 'fredericpena'
 
-import time
 from PyQt4 import QtCore
-from PyQt4.QtGui import *
-from PyQt4.QtCore import pyqtSlot
+from PyQt4.QtGui import QWidget, QGraphicsView, QGraphicsScene, QVBoxLayout, QPixmap, QGraphicsPixmapItem, QLabel, \
+    QTransform
+
 from BKSensorProximidadDummie import BKSensorProximidadDummie
 
 class BKReversaScreen(QWidget):
@@ -30,6 +31,12 @@ class BKReversaScreen(QWidget):
         self.baseLayout.setContentsMargins(0,0,0,0)
         self.baseLayout.addWidget(self.view)
 
+        #Decoracion
+        car_logo = QPixmap("imagenes/car_logo.png")
+        car_logo_item = QGraphicsPixmapItem(car_logo)
+        car_logo_item.setPos(5,5)
+        self.scene.addItem(car_logo_item)
+
         self.distlabel = QLabel("-")
         self.distlabel.setGeometry(20, 20, 280, 200)
         self.distlabel.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
@@ -54,15 +61,15 @@ class BKReversaScreen(QWidget):
     def mousePressEvent(self, QMouseEvent):
         if self.sensorActivo == 0:
             # Iniciar sensores de Proximidad
-            self.sensor1 = BKSensorProximidad(0, 15, 14)
+            self.sensor1 = BKSensorProximidadDummie(0, 15, 14)
             self.sensor1.connect(self.sensor1, QtCore.SIGNAL('distancia_sensor'), self.mostrarMedida)
             self.sensor1.start()
             self.distancias[0] = 0.0
-            self.sensor2 = BKSensorProximidad(1, 23, 22)
+            self.sensor2 = BKSensorProximidadDummie(1, 23, 22)
             self.sensor2.connect(self.sensor2, QtCore.SIGNAL('distancia_sensor'), self.mostrarMedida)
             self.sensor2.start()
             self.distancias[1] = 0.0
-            self.sensor3 = BKSensorProximidad(2, 25, 24)
+            self.sensor3 = BKSensorProximidadDummie(2, 25, 24)
             self.sensor3.connect(self.sensor2, QtCore.SIGNAL('distancia_sensor'), self.mostrarMedida)
             self.sensor3.start()
             self.distancias[2] = 0.0
