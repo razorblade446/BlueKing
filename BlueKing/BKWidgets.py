@@ -44,10 +44,13 @@ class BKGauge(QWidget):
         gradiente.setColorAt(0.25, amarillo)
         gradiente.setColorAt(0.50, verde)
 
+        colorSeleccionado = QColor()
+        colorSeleccionado.setNamedColor(self.colorDial)
+
         lapizTrazo = QPen()
         lapizTrazo.setStyle(QtCore.Qt.SolidLine)
         lapizTrazo.setWidth(self.anchoLinea)
-        lapizTrazo.setBrush(QColor().setNamedColor(self.colorDial))
+        lapizTrazo.setBrush(colorSeleccionado)
 
         porcentaje = self.valor / float(self.maxValor - self.minValor)
         span = math.floor((self.finishAngle - self.startAngle) * porcentaje)
