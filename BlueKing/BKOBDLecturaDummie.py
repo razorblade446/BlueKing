@@ -8,14 +8,6 @@ from PyQt4 import QtCore
 
 
 class BKOBDLecturaDummie(QtCore.QThread):
-    class Sensor:
-        def __init__(self, shortName, sensorName, sensorcommand, sensorValueFunction, u):
-            self.shortname = shortName
-            self.name = sensorName
-            self.cmd = sensorcommand
-            self.value = sensorValueFunction
-            self.unit = u
-
 
     def __init__(self, bt_address):
         super(BKOBDLecturaDummie, self).__init__()
@@ -25,16 +17,6 @@ class BKOBDLecturaDummie(QtCore.QThread):
 
         self.bt_address = bt_address
         self.bt_pin = "1234"
-
-        self.obdSocket = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
-        self.obdSocket.connect((self.bt_address, 1))
-
-        self.sendSocket("ATZ")
-        print "Respuesta de ATZ: %s" % self.leerSocket()
-        self.sendSocket("ATE0")
-        print "Respuesta de ATE0: %s" % self.leerSocket()
-        self.sendSocket("ATL0")
-        print "Respuesta de ATL0: %s" % self.leerSocket()
 
     def sendSocket(self, comando):
         self.obdSocket.send("%s\r" % comando)
@@ -88,7 +70,27 @@ class BKOBDLecturaDummie(QtCore.QThread):
         code = code[4:]
         return code
 
+    def conectar(self):
+        while True:
+            try:
+                self.obdSocket = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
+                self.obdSocket.connect((self.bt_address, 1))
+                break
+            except bluetooth.btcommon.BluetoothError as error:
+                self.obdSocket.close()
+                print "No se pudo conectar: ", error, " reintentando en 10 segundos..."
+                time.sleep(10)
+
     def run(self):
+
+        self.conectar()
+
+        self.sendSocket("ATZ")
+        print "Respuesta de ATZ: %s" % self.leerSocket()
+        self.sendSocket("ATE0")
+        print "Respuesta de ATE0: %s" % self.leerSocket()
+        self.sendSocket("ATL0")
+        print "Respuesta de ATL0: %s" % self.leerSocket()
 
         velocidad = 0
         rpm = 700
