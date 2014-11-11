@@ -95,12 +95,6 @@ class BKOBDLecturaDummie(QtCore.QThread):
         velocidad = 0
         rpm = 700
 
-        # Leer 0100
-
-        for i in range(10):
-            self.sendSocket("010%d" % i)
-            print "Respuesta a 010%d: %s" % (i, self.leerSocket())
-
         while self.corriendo == True:
             # Generar datos para cada lectura y activar slots...
 

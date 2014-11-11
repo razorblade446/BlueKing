@@ -64,7 +64,7 @@ class BKHudScreen(QWidget):
         # Indicadores
         # Velocidad
         self.gaugeWidget = BKGauge()
-        self.gaugeWidget.setGeometry(60, 40, 200, 200)
+        self.gaugeWidget.setGeometry(70,50,180,180)
         self.gaugeWidget.colorDial="#00FF00"
         self.gaugeWidget.maxValor=250
         self.scene.addWidget(self.gaugeWidget)
@@ -77,11 +77,10 @@ class BKHudScreen(QWidget):
 
         # RPM
         self.rpmGaugeWidget = BKGauge()
-        self.rpmGaugeWidget.setGeometry(65,45,190,190)
+        self.rpmGaugeWidget.setGeometry(60, 40, 200, 200)
         self.rpmGaugeWidget.maxValor=25000
-        self.rpmGaugeWidget.anchoLinea = 10
+        self.rpmGaugeWidget.anchoLinea = 20
         self.rpmGaugeWidget.colorDial = "#FF0000"
-        self.rpmGaugeWidget.maxValor = 6000
         self.scene.addWidget(self.rpmGaugeWidget)
 
         self.rpmLabel = QLabel("2658")
