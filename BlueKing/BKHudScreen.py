@@ -65,6 +65,8 @@ class BKHudScreen(QWidget):
         # Velocidad
         self.gaugeWidget = BKGauge()
         self.gaugeWidget.setGeometry(60, 40, 200, 200)
+        self.gaugeWidget.colorDial="#00FF00"
+        self.gaugeWidget.maxValor=250
         self.scene.addWidget(self.gaugeWidget)
 
         self.velocidadLabel = QLabel("250")
@@ -76,7 +78,8 @@ class BKHudScreen(QWidget):
         # RPM
         self.rpmGaugeWidget = BKGauge()
         self.rpmGaugeWidget.setGeometry(65,45,190,190)
-        self.rpmGaugeWidget.anchoLinea = 5
+        self.rpmGaugeWidget.maxValor=25000
+        self.rpmGaugeWidget.anchoLinea = 10
         self.rpmGaugeWidget.colorDial = "#FF0000"
         self.rpmGaugeWidget.maxValor = 6000
         self.scene.addWidget(self.rpmGaugeWidget)
@@ -113,7 +116,7 @@ class BKHudScreen(QWidget):
         # RPM
         if 'rpm' in datos:
             self.rpmLabel.setText(`datos['rpm']`)
-            self.rpmGaugeWidget.setValor(`datos['rpm']`)
+            self.rpmGaugeWidget.setValor(datos['rpm'])
 
         # Temperatura Motor
         if 'engTemp' in datos:

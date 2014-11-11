@@ -119,4 +119,4 @@ class BKOBDLecturaDummie(QtCore.QThread):
             # LLamar los slots
             self.emit(self.senal, {'velocidad': velocidad, 'rpm': rpm, 'engTemp': engTemp})
 
-            time.sleep(0.01)
+            time.sleep(0.0333333)
