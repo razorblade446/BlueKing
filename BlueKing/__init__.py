@@ -16,7 +16,25 @@ class BlueKing(Qt.QApplication):
 
         # Usar la pantalla de Reversa
         self.base = BKHudScreen()
+        self.connect(self, Qt.SIGNAL("lastWindowClosed()"), self.quit)
         self.exec_()
+
+class BKBluetoothStatus(Qt.QThread):
+
+    def __init__(self):
+        super(BKBluetoothStatus, self).__init__()
+        self.corriendo = False
+
+    def iniciar(self):
+        self.corriendo = True
+        self.start()
+
+    def detener(self):
+        self.corriendo = False
+        while self.isRunning():
+            continue
+        self.terminate()
+
 
 def main():
     app = BlueKing(sys.argv)

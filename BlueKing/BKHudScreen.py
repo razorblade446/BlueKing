@@ -2,7 +2,7 @@
 __author__ = 'fredericpena'
 
 from PyQt4.QtGui import QGraphicsView, QGraphicsScene, QVBoxLayout, QPixmap, QGraphicsPixmapItem, QLabel, QTransform
-from BlueKing.BKOBDLecturaDummie import *
+from BlueKing.BKOBDLectura import *
 from BlueKing.BKWidgets import *
 from ConfigParser import ConfigParser
 
@@ -13,8 +13,16 @@ class BKHudScreen(QWidget):
         self.bt_address=""
         self.inicializarUI()
         self.inicializarConfig()
-        self.hilo = BKOBDLecturaDummie(self.bt_address)
+        self.hilo = BKOBDLectura(self.bt_address)
         self.hilo.connect(self.hilo, self.hilo.senal, self.informacion_recibida)
+
+    def closeEvent(self, event):
+        print "Cierre de ventana..."
+        self.hilo.corriendo = False
+        while self.hilo.isRunning():
+            continue
+        print "Hilo terminado!!"
+        event.accept()
 
     def inicializarConfig(self):
         # Leer configuraciones
@@ -38,10 +46,6 @@ class BKHudScreen(QWidget):
         self.baseLayout.addWidget(self.view)
 
         # Decoracion
-        car_logo = QPixmap("imagenes/car_logo.png").scaled(32,32, QtCore.Qt.KeepAspectRatio)
-        car_logo_item = QGraphicsPixmapItem(car_logo)
-        car_logo_item.setPos(5,5)
-        self.scene.addItem(car_logo_item)
 
         # Etiqueta km/h
         kmLabel = QLabel("Km/h")
@@ -56,17 +60,31 @@ class BKHudScreen(QWidget):
         self.scene.addWidget(rpmSigLabel)
 
         # Icono Temperatura
-        thermometro = QPixmap("imagenes/termometro_rojo.png").scaled(25,25, QtCore.Qt.KeepAspectRatio)
+        thermometro = QPixmap("imagenes/termometro_amarillo.png").scaled(32,32,QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
         thermometro_item = QGraphicsPixmapItem(thermometro)
-        thermometro_item.setPos(290, 210)
+        thermometro_item.setPos(167, 208)
         self.scene.addItem(thermometro_item)
 
+        # Icono Batería
+        imagenBateria = QPixmap("imagenes/battery.png").scaled(32,32,QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+        imagenBateria_item = QGraphicsPixmapItem(imagenBateria)
+        imagenBateria_item.setPos(80, 206)
+        self.scene.addItem(imagenBateria_item)
+
+        # Icono Bluetooth
+        imagenBluetooth = QPixmap("imagenes/bluetooth.png").scaled(32,32,QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+        imagenBluetooth_item = QGraphicsPixmapItem(imagenBluetooth)
+        imagenBluetooth_item.setPos(4, 208)
+        self.scene.addItem(imagenBluetooth_item)
+
         # Indicadores
+
         # Velocidad
         self.gaugeWidget = BKGauge()
         self.gaugeWidget.setGeometry(70,50,180,180)
         self.gaugeWidget.colorDial="#00FF00"
-        self.gaugeWidget.maxValor=250
+        self.gaugeWidget.maxValor = 250
+        self.gaugeWidget.valor = 1
         self.scene.addWidget(self.gaugeWidget)
 
         self.velocidadLabel = QLabel("250")
@@ -78,30 +96,45 @@ class BKHudScreen(QWidget):
         # RPM
         self.rpmGaugeWidget = BKGauge()
         self.rpmGaugeWidget.setGeometry(60, 40, 200, 200)
-        self.rpmGaugeWidget.maxValor=25000
+        self.rpmGaugeWidget.maxValor = 25000
+        self.rpmGaugeWidget.valor = 1
         self.rpmGaugeWidget.anchoLinea = 20
         self.rpmGaugeWidget.colorDial = "#FF0000"
         self.scene.addWidget(self.rpmGaugeWidget)
 
         self.rpmLabel = QLabel("2658")
-        self.rpmLabel.setGeometry(160, 150, 85, 30)
+        self.rpmLabel.setGeometry(150, 150, 95, 30)
         self.rpmLabel.setAlignment(QtCore.Qt.AlignRight |QtCore.Qt.AlignVCenter)
-        self.rpmLabel.setStyleSheet("font-family: Blutter;font-size: 30px;color: #FF0009; background-color: transparent;")
+        self.rpmLabel.setStyleSheet("font-family: Blutter; font-size: 30px;color: #FF0009; background-color: transparent;")
         self.scene.addWidget(self.rpmLabel)
 
         # Temperatura Motor
         self.engTempLabel = QLabel("180")
-        self.engTempLabel.setGeometry(240, 210, 50, 25)
+        self.engTempLabel.setGeometry(192, 208, 48, 32)
         self.engTempLabel.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
         self.engTempLabel.setStyleSheet("font-family: Blutter; font-size: 20px; color: #00FF00;background-color: transparent;")
         self.scene.addWidget(self.engTempLabel)
+
+        # Indicador de Voltaje
+        self.voltajeLabel = QLabel("12.2")
+        self.voltajeLabel.setGeometry(112, 208, 48, 32)
+        self.voltajeLabel.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
+        self.voltajeLabel.setStyleSheet("font-size: 20px; color: #00FF00; background-color: transparent;")
+        self.scene.addWidget(self.voltajeLabel)
+
+        # Indicador de conexion Bluetooth
+        self.bluetoothLabel = QLabel("NO")
+        self.bluetoothLabel.setGeometry(32, 208, 48, 32)
+        self.bluetoothLabel.setAlignment(QtCore.Qt.AlignLeft|QtCore.Qt.AlignVCenter)
+        self.bluetoothLabel.setStyleSheet("font-size: 20px; color: #00FF00; background-color: transparent;")
+        self.scene.addWidget(self.bluetoothLabel)
 
         self.setLayout(self.baseLayout)
 
         transformacion = QTransform()
         transformacion.scale(1.0,-1.0)
 
-        self.view.setTransform(transformacion)
+        #self.view.setTransform(transformacion)
 
         self.show()
 

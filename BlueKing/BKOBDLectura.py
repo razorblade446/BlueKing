@@ -1,16 +1,14 @@
 # vim: set fileencoding=UTF-8 :
-import socket, string
-
 __author__ = 'fredericpena'
 
-import time, random, bluetooth
+import string, time, random, lightblue
 from PyQt4 import QtCore
 
 
-class BKOBDLecturaDummie(QtCore.QThread):
+class BKOBDLectura(QtCore.QThread):
 
     def __init__(self, bt_address):
-        super(BKOBDLecturaDummie, self).__init__()
+        super(BKOBDLectura, self).__init__()
 
         self.corriendo = False
         self.senal = QtCore.SIGNAL("informacion_leida")
@@ -73,24 +71,30 @@ class BKOBDLecturaDummie(QtCore.QThread):
     def conectar(self):
         while True:
             try:
-                self.obdSocket = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
+                self.obdSocket = lightblue.socket(lightblue.RFCOMM)
                 self.obdSocket.connect((self.bt_address, 1))
+                print "Sock..."
                 break
-            except bluetooth.btcommon.BluetoothError as error:
+            except lightblue.BluetoothError as error:
                 self.obdSocket.close()
                 print "No se pudo conectar: ", error, " reintentando en 10 segundos..."
                 time.sleep(10)
 
     def run(self):
 
-        self.conectar()
-
-        self.sendSocket("ATZ")
-        print "Respuesta de ATZ: %s" % self.leerSocket()
-        self.sendSocket("ATE0")
-        print "Respuesta de ATE0: %s" % self.leerSocket()
-        self.sendSocket("ATL0")
-        print "Respuesta de ATL0: %s" % self.leerSocket()
+        if self.bt_address != "testing":
+            print "Inicialización de Bluetooth..."
+            self.conectar()
+            self.sendSocket("ATZ")
+            print "Respuesta de ATZ: %s" % self.leerSocket()
+            self.sendSocket("ATE0")
+            print "Respuesta de ATE0: %s" % self.leerSocket()
+            self.sendSocket("ATL0")
+            print "Respuesta de ATL0: %s" % self.leerSocket()
+            self.sendSocket("ATH0")
+            print "Respuesta de ATH0: %s" % self.leerSocket()
+            self.sendSocket("ATBRD45")
+            print "Respuesta de ATBRD45: %s" % self.leerSocket()
 
         velocidad = 0
         rpm = 700
@@ -98,19 +102,37 @@ class BKOBDLecturaDummie(QtCore.QThread):
         while self.corriendo == True:
             # Generar datos para cada lectura y activar slots...
 
-            # Dato de RPM
-            self.sendSocket("010C1")
-            lectura = self.interpretarResultado(self.leerSocket())
-            rpm = eval("0x" + lectura, {}, {})
+            try:
 
-            self.sendSocket("010D1")
-            lectura = self.interpretarResultado(self.leerSocket())
-            velocidad = eval("0x" + lectura, {}, {})
+                if self.bt_address != "testing":
 
-            # Dato de Temperatura motor
-            engTemp = random.randint(0, 120)
+                    self.sendSocket("010C")
+                    lectura = self.interpretarResultado(self.leerSocket())
+                    rpm = eval("0x" + lectura, {}, {})
+
+                    self.sendSocket("010D")
+                    lectura = self.interpretarResultado(self.leerSocket())
+                    velocidad = eval("0x" + lectura, {}, {})
+
+                    self.sendSocket("0105")
+                    lectura = self.interpretarResultado(self.leerSocket())
+                    engTemp = eval("0x" + lectura, {}, {}) - 40
+
+                # Dato de RPM
+
+                else:
+                    rpm = random.randint(0,6000)
+                    velocidad = random.randint(0, 200)
+                    engTemp = random.randint(0, 120)
+
+            except lightblue.BluetoothError as error:
+                self.obdSocket.close()
+                print "Conexión perdida, reintentanto conexion..."
+                self.conectar()
 
             # LLamar los slots
             self.emit(self.senal, {'velocidad': velocidad, 'rpm': rpm, 'engTemp': engTemp})
 
-            time.sleep(0.0333333)
+            #time.sleep(0.01)
+
+        self.terminate()

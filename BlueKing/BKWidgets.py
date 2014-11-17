@@ -1,11 +1,34 @@
 # vim: set fileencoding=UTF-8 :
 __author__ = 'fredericpena'
 
-import math
-from PyQt4.QtGui import QWidget, QPainter, QColor, QConicalGradient, QGradient, QPen
+import math, time
+from PyQt4.QtGui import QWidget, QPainter, QColor, QPen
 from PyQt4 import QtCore
+from PyQt4.QtCore import QThread
+
+class UpdateTimer(QThread):
+        def __init__(self):
+            QThread.__init__(self)
+            self.corriendo = False
+            self.senal = QtCore.SIGNAL("update_frame")
+
+        def iniciarTimer(self):
+            self.corriendo = True
+            self.start()
+
+        def terminarTimer(self):
+            self.corriendo = False
+            while self.isRunning():
+                continue
+
+        def run(self):
+            while self.corriendo:
+                self.emit(self.senal)
+                time.sleep(0.03333333333)
+            self.terminate()
 
 class BKGauge(QWidget):
+
     def __init__(self):
         super(BKGauge, self).__init__()
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
@@ -17,9 +40,17 @@ class BKGauge(QWidget):
         self.colorDial = "00FF00"   # Color Dial
         self.anchoLinea = 20
 
+        # Hilo de refresco
+        self.updateTimer = UpdateTimer()
+        self.updateTimer.connect(self.updateTimer, self.updateTimer.senal, self.update)
+        self.updateTimer.iniciarTimer()
+
+    def destroy(self, bool_destroyWindow=True, bool_destroySubWindows=True):
+        if bool_destroyWindow or bool_destroySubWindows:
+            self.updateTimer.terminarTimer()
+
     def setValor(self, val):
         self.valor = val
-        self.update()
 
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -37,13 +68,6 @@ class BKGauge(QWidget):
         rojo = QColor()
         rojo.setNamedColor("#FF0000")
 
-        gradiente = QConicalGradient()
-        gradiente.setCoordinateMode(QGradient.ObjectBoundingMode)
-        gradiente.setAngle(60)
-        gradiente.setColorAt(0, rojo)
-        gradiente.setColorAt(0.25, amarillo)
-        gradiente.setColorAt(0.50, verde)
-
         colorSeleccionado = QColor()
         colorSeleccionado.setNamedColor(self.colorDial)
 
@@ -51,11 +75,13 @@ class BKGauge(QWidget):
         lapizTrazo.setStyle(QtCore.Qt.SolidLine)
         lapizTrazo.setWidth(self.anchoLinea)
         lapizTrazo.setBrush(colorSeleccionado)
+        lapizTrazo.setCapStyle(QtCore.Qt.FlatCap)
 
         porcentaje = self.valor / float(self.maxValor - self.minValor)
         span = math.floor((self.finishAngle - self.startAngle) * porcentaje)
 
         painter.setPen(lapizTrazo)
+
         painter.drawArc(nuevoRect, self.startAngle * 16, span * 16)
 
         super(BKGauge, self).paintEvent(event)
