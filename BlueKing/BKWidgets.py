@@ -24,7 +24,7 @@ class UpdateTimer(QThread):
         def run(self):
             while self.corriendo:
                 self.emit(self.senal)
-                time.sleep(0.03333333333)
+                time.sleep(0.1)
             self.terminate()
 
 class BKGauge(QWidget):
@@ -42,8 +42,8 @@ class BKGauge(QWidget):
 
         # Hilo de refresco
         self.updateTimer = UpdateTimer()
-        self.updateTimer.connect(self.updateTimer, self.updateTimer.senal, self.update)
-        self.updateTimer.iniciarTimer()
+        #self.updateTimer.connect(self.updateTimer, self.updateTimer.senal, self.update)
+        #self.updateTimer.iniciarTimer()
 
     def destroy(self, bool_destroyWindow=True, bool_destroySubWindows=True):
         if bool_destroyWindow or bool_destroySubWindows:
@@ -51,6 +51,9 @@ class BKGauge(QWidget):
 
     def setValor(self, val):
         self.valor = val
+        if self.valor > self.maxValor:
+            self.maxValor = self.valor
+        self.update()
 
     def paintEvent(self, event):
         painter = QPainter(self)

@@ -5,6 +5,7 @@ from PyQt4.QtGui import QGraphicsView, QGraphicsScene, QVBoxLayout, QPixmap, QGr
 from BlueKing.BKOBDLectura import *
 from BlueKing.BKWidgets import *
 from ConfigParser import ConfigParser
+from BlueKing.BKBluetoothConexion import BKBluetoothConexion
 
 class BKHudScreen(QWidget):
 
@@ -13,8 +14,48 @@ class BKHudScreen(QWidget):
         self.bt_address=""
         self.inicializarUI()
         self.inicializarConfig()
-        self.hilo = BKOBDLectura(self.bt_address)
+        self.bluetoothHandler = BKBluetoothConexion(self.bt_address)
+        self.bluetoothHandler.connect(self.bluetoothHandler, self.bluetoothHandler.senal, self.bluetoothStatus)
+        self.hilo = BKOBDLectura()
         self.hilo.connect(self.hilo, self.hilo.senal, self.informacion_recibida)
+        self.hilo.connect(self.hilo, self.hilo.senalBluetooth, self.bluetoothStatus)
+
+        self.bluetoothHandler.iniciar()
+        #self.hilo.setSocket("testing")
+        #self.hilo.corriendo = True
+        #self.hilo.start()
+
+
+    def bluetoothStatus(self, datos):
+
+        if 'status' in datos:
+
+            if datos['status'] == 'buscando':
+                self.bluetoothLabel.setText("BUS")
+
+            elif datos['status'] == 'OK':
+                # Iniciar sensores
+                self.hilo.setSocket(datos['socket'])
+
+                if self.hilo.isRunning():
+                    # Ya corre, hay que continuar el proceso
+                    self.hilo.pausada = False
+                else:
+                    self.hilo.corriendo = True
+                    self.hilo.pausada = False
+                    self.hilo.start()
+
+                self.bluetoothLabel.setText("OK")
+
+            elif datos['status'] == 'cierre':
+                # Detener Sensores
+                self.hilo.corriendo = False
+                while self.hilo.isRunning():
+                    continue
+
+            else:
+                self.bluetoothLabel.setText("NO")
+
 
     def closeEvent(self, event):
         print "Cierre de ventana..."
@@ -46,6 +87,10 @@ class BKHudScreen(QWidget):
         self.baseLayout.addWidget(self.view)
 
         # Decoracion
+        icono = QPixmap("imagenes/blueking_logo.png").scaled(100,25, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+        icono_item = QGraphicsPixmapItem(icono)
+        icono_item.setPos(0,0)
+        self.scene.addItem(icono_item)
 
         # Etiqueta km/h
         kmLabel = QLabel("Km/h")
@@ -83,12 +128,12 @@ class BKHudScreen(QWidget):
         self.gaugeWidget = BKGauge()
         self.gaugeWidget.setGeometry(70,50,180,180)
         self.gaugeWidget.colorDial="#00FF00"
-        self.gaugeWidget.maxValor = 250
-        self.gaugeWidget.valor = 1
+        self.gaugeWidget.maxValor = 220
+        self.gaugeWidget.valor = 0
         self.scene.addWidget(self.gaugeWidget)
 
-        self.velocidadLabel = QLabel("250")
-        self.velocidadLabel.setGeometry(115,90,130,60)
+        self.velocidadLabel = QLabel("0")
+        self.velocidadLabel.setGeometry(105,90,140,60)
         self.velocidadLabel.setAlignment(QtCore.Qt.AlignRight |QtCore.Qt.AlignVCenter)
         self.velocidadLabel.setStyleSheet("font-family: Blutter;font-size: 60px;color: #00FFFF; background: transparent; font-weight: bold; text-align: right;")
         self.scene.addWidget(self.velocidadLabel)
@@ -96,27 +141,27 @@ class BKHudScreen(QWidget):
         # RPM
         self.rpmGaugeWidget = BKGauge()
         self.rpmGaugeWidget.setGeometry(60, 40, 200, 200)
-        self.rpmGaugeWidget.maxValor = 25000
-        self.rpmGaugeWidget.valor = 1
+        self.rpmGaugeWidget.maxValor = 7000
+        self.rpmGaugeWidget.valor = 0
         self.rpmGaugeWidget.anchoLinea = 20
-        self.rpmGaugeWidget.colorDial = "#FF0000"
+        self.rpmGaugeWidget.colorDial = "#FFFF00"
         self.scene.addWidget(self.rpmGaugeWidget)
 
-        self.rpmLabel = QLabel("2658")
-        self.rpmLabel.setGeometry(150, 150, 95, 30)
+        self.rpmLabel = QLabel("0")
+        self.rpmLabel.setGeometry(140, 150, 105, 30)
         self.rpmLabel.setAlignment(QtCore.Qt.AlignRight |QtCore.Qt.AlignVCenter)
-        self.rpmLabel.setStyleSheet("font-family: Blutter; font-size: 30px;color: #FF0009; background-color: transparent;")
+        self.rpmLabel.setStyleSheet("font-family: Blutter; font-size: 30px;color: #FFFF00; background-color: transparent;")
         self.scene.addWidget(self.rpmLabel)
 
         # Temperatura Motor
-        self.engTempLabel = QLabel("180")
+        self.engTempLabel = QLabel("0")
         self.engTempLabel.setGeometry(192, 208, 48, 32)
         self.engTempLabel.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
         self.engTempLabel.setStyleSheet("font-family: Blutter; font-size: 20px; color: #00FF00;background-color: transparent;")
         self.scene.addWidget(self.engTempLabel)
 
         # Indicador de Voltaje
-        self.voltajeLabel = QLabel("12.2")
+        self.voltajeLabel = QLabel("0.0")
         self.voltajeLabel.setGeometry(112, 208, 48, 32)
         self.voltajeLabel.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
         self.voltajeLabel.setStyleSheet("font-size: 20px; color: #00FF00; background-color: transparent;")
@@ -134,11 +179,14 @@ class BKHudScreen(QWidget):
         transformacion = QTransform()
         transformacion.scale(1.0,-1.0)
 
-        #self.view.setTransform(transformacion)
+        self.view.setTransform(transformacion)
 
         self.show()
 
+
     def informacion_recibida(self, datos):
+
+        print datos
 
         # Velocidad
         if 'velocidad' in datos:
@@ -154,9 +202,13 @@ class BKHudScreen(QWidget):
         if 'engTemp' in datos:
             self.engTempLabel.setText(`datos['engTemp']`)
 
-    def mousePressEvent(self, QMouseEvent):
-        if not self.hilo.corriendo:
-            self.hilo.corriendo = True
-            self.hilo.start()
+        # Voltage
+        if 'voltage' in datos:
+            self.voltajeLabel.setText(`datos['voltage']`)
+
+    # def mousePressEvent(self, QMouseEvent):
+    #     if not self.hilo.corriendo:
+    #         self.hilo.corriendo = True
+    #         self.hilo.start()
 
 

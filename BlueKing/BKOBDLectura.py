@@ -1,20 +1,34 @@
 # vim: set fileencoding=UTF-8 :
+from bluetooth.bluez import BluetoothSocket
+from bluetooth._bluetooth import RFCOMM
+
 __author__ = 'fredericpena'
 
-import string, time, random, lightblue
+import string, time, random, bluetooth
 from PyQt4 import QtCore
+from bluetooth import BluetoothSocket, BluetoothError
 
 
 class BKOBDLectura(QtCore.QThread):
 
-    def __init__(self, bt_address):
+    def __init__(self):
         super(BKOBDLectura, self).__init__()
 
         self.corriendo = False
+        self.pausada = False
         self.senal = QtCore.SIGNAL("informacion_leida")
+        self.senalBluetooth = QtCore.SIGNAL("bluetooth_estado")
+        self.testMode = True
+        self.obdSocket = BluetoothSocket(RFCOMM)
 
-        self.bt_address = bt_address
-        self.bt_pin = "1234"
+    def setSocket(self, socket_opt):
+        try:
+            socket_opt.getsockname()
+            self.obdSocket = socket_opt
+            self.testMode = False
+        except Exception as error:
+            # El parametro debe ser "testing"
+            self.testMode = True
 
     def sendSocket(self, comando):
         self.obdSocket.send("%s\r" % comando)
@@ -29,7 +43,7 @@ class BKOBDLectura(QtCore.QThread):
                 if len(c) == 0:
                     if (repeat_count == 5):
                         break
-                    print "Got nothing\n"
+                    print "No se obtuvo nada\n"
                     repeat_count = repeat_count + 1
                     continue
 
@@ -51,7 +65,7 @@ class BKOBDLectura(QtCore.QThread):
         # 9 seems to be the length of the shortest valid response
         if len(code) < 7:
             # raise Exception("BogusCode")
-            print "boguscode?" + code
+            print "código raro?" + code
 
         code = string.split(code, "\r")
         code = code[0]
@@ -71,68 +85,62 @@ class BKOBDLectura(QtCore.QThread):
     def conectar(self):
         while True:
             try:
-                self.obdSocket = lightblue.socket(lightblue.RFCOMM)
+                self.obdSocket = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
                 self.obdSocket.connect((self.bt_address, 1))
-                print "Sock..."
+                print "Socket conectado..."
                 break
-            except lightblue.BluetoothError as error:
+            except bluetooth.BluetoothError as error:
                 self.obdSocket.close()
                 print "No se pudo conectar: ", error, " reintentando en 10 segundos..."
                 time.sleep(10)
 
     def run(self):
 
-        if self.bt_address != "testing":
-            print "Inicialización de Bluetooth..."
-            self.conectar()
-            self.sendSocket("ATZ")
-            print "Respuesta de ATZ: %s" % self.leerSocket()
-            self.sendSocket("ATE0")
-            print "Respuesta de ATE0: %s" % self.leerSocket()
-            self.sendSocket("ATL0")
-            print "Respuesta de ATL0: %s" % self.leerSocket()
-            self.sendSocket("ATH0")
-            print "Respuesta de ATH0: %s" % self.leerSocket()
-            self.sendSocket("ATBRD45")
-            print "Respuesta de ATBRD45: %s" % self.leerSocket()
-
         velocidad = 0
         rpm = 700
+        engTemp = 0
+        voltage = 0
 
         while self.corriendo == True:
-            # Generar datos para cada lectura y activar slots...
+            # Pausa del hilo
+            while self.pausada and self.corriendo:
+                continue
 
+            # Generar datos para cada lectura y activar slots...
             try:
 
-                if self.bt_address != "testing":
+                if not self.testMode:
 
-                    self.sendSocket("010C")
+                    self.sendSocket("010C1")
                     lectura = self.interpretarResultado(self.leerSocket())
-                    rpm = eval("0x" + lectura, {}, {})
+                    rpm = eval("0x" + lectura, {}, {}) / 4
 
-                    self.sendSocket("010D")
+                    self.sendSocket("010D1")
                     lectura = self.interpretarResultado(self.leerSocket())
-                    velocidad = eval("0x" + lectura, {}, {})
+                    velocidad = eval("0x" + lectura, {}, {}) * 1.1
 
                     self.sendSocket("0105")
                     lectura = self.interpretarResultado(self.leerSocket())
                     engTemp = eval("0x" + lectura, {}, {}) - 40
 
-                # Dato de RPM
-
                 else:
                     rpm = random.randint(0,6000)
                     velocidad = random.randint(0, 200)
                     engTemp = random.randint(0, 120)
+                    voltage = float(random.randint(90, 135) / 10)
+                    time.sleep(0.066666666666666)
 
-            except lightblue.BluetoothError as error:
-                self.obdSocket.close()
+            except bluetooth.BluetoothError as error:
                 print "Conexión perdida, reintentanto conexion..."
-                self.conectar()
+                self.obdSocket.close()
+                velocidad = 0
+                rpm = 0
+                engTemp = 0
+                voltage = 0
+                self.pausada = True
+                self.emit(self.senalBluetooth, {'status':'perdida'})
+                self.emit(self.senal, {'velocidad': 0, 'rpm': 0, 'engTemp': 0, 'voltage': 0})
 
-            # LLamar los slots
-            self.emit(self.senal, {'velocidad': velocidad, 'rpm': rpm, 'engTemp': engTemp})
-
-            #time.sleep(0.01)
+            self.emit(self.senal, {'velocidad': velocidad, 'rpm': rpm, 'engTemp': engTemp, "voltage": voltage})
 
         self.terminate()
